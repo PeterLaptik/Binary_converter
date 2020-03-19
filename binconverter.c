@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
-#include <inttypes.h>
 
 #define MAX_CHAR_BUFFER 255
 #define EXPONENT_BIAS_FLOAT -127
