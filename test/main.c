@@ -62,10 +62,6 @@ int main(int argc, char **argv)
     printf("Float number(positive):%f\n", num_float);
     printf("Binary representation:%s\n", float_to_bin(num_float));
     printf("Binary representation:%s\n\n", float_to_bin_sp(num_float));
-//    printf("compare: %d\n", strcmp(float_to_bin(num_float),"01000111110011101010100001000011"));
-//    printf("compare: %d\n", strlen("01000111110011101010100001000011"));
-//    printf("compare: %d\n", strlen(float_to_bin(num_float)));
-//    printf("symbol:%d\n", strcmp(float_to_bin(num_float),"01000111110011101010100001000011"));
     #ifdef TURN_ON_ASSERTION
         assert(strcmp(float_to_bin(num_float),"01000111110011101010100001000011")==0);
     #endif // TURN_ON_ASSERTION
