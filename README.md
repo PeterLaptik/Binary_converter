@@ -1,7 +1,8 @@
 # Binary_converter
 Simple decimal to binary (binary to decimal)  number converter.
 
-#Example:
+### Example:
+```C
 #include <stdio.h>
 #include "binconverter.h"
 
@@ -12,4 +13,4 @@ int main(int argc, char **argv)
     printf("%f\n", bin_to_float("01000010 01001010 00111000 01010010"));  // 50.555
     return 0;
 }
-
+```
