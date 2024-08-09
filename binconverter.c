@@ -2,6 +2,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <limits.h>
+#include <assert.h>
+#include <stdlib.h>
 
 #define MAX_CHAR_BUFFER 255
 #define EXPONENT_BIAS_FLOAT -127
@@ -13,15 +16,14 @@
 #define SYMBOL_SEPARATOR ' '
 
 /* Buffer sizes for character sequences */
-#define BITS_IN_BYTE 8
-#define SIZE_OF_INT sizeof(int)*BITS_IN_BYTE + 1
-#define SIZE_OF_INT_WITH_SP sizeof(int)*BITS_IN_BYTE + sizeof(int)
-#define SIZE_OF_FLOAT sizeof(float)*BITS_IN_BYTE + 1
-#define SIZE_OF_FLOAT_WITH_SP sizeof(float)*BITS_IN_BYTE + sizeof(float)
-#define SIZE_OF_FLOAT_FR sizeof(float)*BITS_IN_BYTE + 3
-#define SIZE_OF_DOUBLE sizeof(double)*BITS_IN_BYTE + 1
-#define SIZE_OF_DOUBLE_WITH_SP sizeof(double)*BITS_IN_BYTE + sizeof(double)
-#define SIZE_OF_DOUBLE_FR sizeof(double)*BITS_IN_BYTE + 3
+#define BUF_SIZE_OF_INT sizeof(int)*CHAR_BIT + 1
+#define BUF_SIZE_OF_INT_WITH_SP sizeof(int)*CHAR_BIT + sizeof(int)
+#define BUF_SIZE_OF_FLOAT sizeof(float)*CHAR_BIT + 1
+#define BUF_SIZE_OF_FLOAT_WITH_SP sizeof(float)*CHAR_BIT + sizeof(float)
+#define BUF_SIZE_OF_FLOAT_FR sizeof(float)*CHAR_BIT + 3
+#define BUF_SIZE_OF_DOUBLE sizeof(double)*CHAR_BIT + 1
+#define BUF_SIZE_OF_DOUBLE_WITH_SP sizeof(double)*CHAR_BIT + sizeof(double)
+#define BUF_SIZE_OF_DOUBLE_FR sizeof(double)*CHAR_BIT + 3
 
 /* Masks */
 #define MASK_FLOAT_FRACTION 0x007FFFFF
@@ -30,8 +32,13 @@
 #define MASK_DOUBLE_EXPONENT 0x3FF0000000000000
 
 
-void reverse(char* input, size_t size); /* makes the character string reversed */
-char* trim_string(char* str);   /* remove non-digit characters from string */
+/* Size checks: getting compile error on wrong sizes */
+/* 32-bit float and 64-bit double are expected */
+typedef char float_type_size_check[sizeof(float) == sizeof(uint32_t) ? 1 : -1];
+typedef char double_type_size_check[sizeof(double) == sizeof(uint64_t) ? 1 : -1];
+
+void reverse_string(char* input, size_t size);
+char* trim_string(char* str);   /* removes all non-digit characters from string */
 
 
 /* Numbers mappings */
@@ -51,203 +58,152 @@ struct Display_float
 };
 
 
-/* Checks type sizes */
-int check_compatibility()
-{
-    if(sizeof(float)!=sizeof(uint32_t))
-        return 0;
-
-    if(sizeof(double)!=sizeof(uint64_t))
-        return 0;
-
-    return 1;
-}
-
-
 char* int_to_bin(int number)
 {
-    static char result[SIZE_OF_INT];
+    char *result;
     int scanner;    /* bit scanner */
     int cursor;     /* string cursor */
-
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_INT; ++i)
-        result[i] = 0;
 
     /* scan value */
     cursor = 0;
     scanner = 1;
+    result = calloc(BUF_SIZE_OF_INT, sizeof(char));
     while(scanner)
     {
-        if(scanner & number)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
+        result[cursor] = scanner & number ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
     }
-    reverse(result, SIZE_OF_INT);
+    reverse_string(result, BUF_SIZE_OF_INT - 1);
     return result;
 }
 
 
 char* int_to_bin_sp(int number)
 {
-    static char result[SIZE_OF_INT_WITH_SP];
+    char *result;
     int scanner;    /* bit scanner */
     int cursor;     /* string cursor */
-
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_INT_WITH_SP; ++i)
-        result[i] = 0;
 
     /* scan value */
     cursor = 0;
     scanner = 1;
+    result = calloc(BUF_SIZE_OF_INT_WITH_SP, sizeof(char));
     while(scanner)
     {
-        if(scanner & number)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
+        result[cursor] = scanner & number ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
         /* add separator */
-        if(!((cursor+1)%(BITS_IN_BYTE + 1)))
+        if(!((cursor + 1)%(CHAR_BIT + 1)) && cursor != BUF_SIZE_OF_INT_WITH_SP - 1)
         {
             result[cursor] = SYMBOL_SEPARATOR;
             cursor++;
         }
     }
-    reverse(result, SIZE_OF_INT_WITH_SP);
+    reverse_string(result, BUF_SIZE_OF_INT_WITH_SP - 1);
     return result;
 }
 
 
 char* uint_to_bin(unsigned int number)
 {
-    static char result[SIZE_OF_INT];
+    char *result;
     int scanner;    /* bit scanner */
     int cursor;     /* string cursor */
-
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_INT; ++i)
-        result[i] = 0;
 
     /* scan value */
     cursor = 0;
     scanner = 1;
+    result = calloc(BUF_SIZE_OF_INT, sizeof(char));
     while(scanner)
     {
-        if(scanner & number)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
+        result[cursor] = scanner & number ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
     }
-    reverse(result, SIZE_OF_INT);
+    reverse_string(result, BUF_SIZE_OF_INT - 1);
     return result;
 }
 
 
 char* uint_to_bin_sp(unsigned int number)
 {
-    static char result[SIZE_OF_INT_WITH_SP];
+    char *result;
     int scanner;    /* bit scanner */
     int cursor;     /* string cursor */
-
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_INT_WITH_SP; ++i)
-        result[i] = 0;
 
     /* scan value */
     cursor = 0;
     scanner = 1;
+    result = calloc(BUF_SIZE_OF_INT_WITH_SP, sizeof(char));
     while(scanner)
     {
-        if(scanner & number)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
+        result[cursor] = scanner & number ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
         /* add separator */
-        if(!((cursor+1)%(BITS_IN_BYTE + 1)))
+        if(!((cursor + 1)%(CHAR_BIT + 1)) && cursor != BUF_SIZE_OF_INT_WITH_SP - 1)
         {
             result[cursor] = SYMBOL_SEPARATOR;
             cursor++;
         }
     }
-    reverse(result, SIZE_OF_INT_WITH_SP);
+    reverse_string(result, BUF_SIZE_OF_INT_WITH_SP - 1);
     return result;
 }
 
 
 char* float_to_bin(float number)
 {
-    static char result[SIZE_OF_FLOAT];
+    char *result;
     uint32_t *number_view = (uint32_t*)&number;
     int scanner;    /* bit scanner */
     int cursor;     /* string cursor */
 
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_FLOAT; ++i)
-        result[i] = 0;
-
-    if(sizeof(float)!=sizeof(uint32_t))
-        return result;
+    assert(sizeof(float)==sizeof(uint32_t));
 
     /* scan value */
     cursor = 0;
     scanner = 1;
+    result = calloc(BUF_SIZE_OF_FLOAT, sizeof(char));
     while(scanner)
     {
-        if(scanner & *number_view)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
+        result[cursor] = scanner & *number_view ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
     }
-    reverse(result, SIZE_OF_FLOAT);
+    reverse_string(result, BUF_SIZE_OF_FLOAT - 1);
     return result;
 }
 
 
 char* float_to_bin_sp(float number)
 {
-    static char result[SIZE_OF_FLOAT_WITH_SP];
+    char *result;
     uint32_t *number_view = (uint32_t*)&number;
     int scanner;    /* bit scanner */
     int cursor;     /* string cursor */
 
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_FLOAT_WITH_SP; ++i)
-        result[i] = 0;
-
-    if(sizeof(float)!=sizeof(uint32_t))
-        return result;
+    assert(sizeof(float)==sizeof(uint32_t));
 
     /* scan value */
     cursor = 0;
     scanner = 1;
+    result = calloc(BUF_SIZE_OF_FLOAT_WITH_SP, sizeof(char));
     while(scanner)
     {
-        if(scanner & *number_view)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
+        result[cursor] = scanner & *number_view ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
         /* add separator */
-        if(!((cursor+1)%(BITS_IN_BYTE + 1)))
+        if(!((cursor + 1)%(CHAR_BIT + 1)) && cursor != BUF_SIZE_OF_FLOAT_WITH_SP - 1)
         {
             result[cursor] = SYMBOL_SEPARATOR;
             cursor++;
         }
     }
-    reverse(result, SIZE_OF_FLOAT_WITH_SP);
+    reverse_string(result, BUF_SIZE_OF_FLOAT_WITH_SP - 1);
     return result;
 }
 
@@ -257,108 +213,85 @@ char* float_to_bin_formatted(float number)
     const int SIGN = 3;
     const int EXPONENT = 12;
 
-    static char result[SIZE_OF_FLOAT_FR];
+    char *result;
     uint32_t *number_view = (uint32_t*)&number;
     int scanner;    /* bit scanner */
     int cursor;     /* string cursor */
 
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_FLOAT_FR; ++i)
-        result[i] = 0;
-
-    if(sizeof(float)!=sizeof(uint32_t))
-        return result;
+    assert(sizeof(float)==sizeof(uint32_t));
 
     /* scan value */
     cursor = 0;
     scanner = 1;
+    result = calloc(BUF_SIZE_OF_FLOAT_FR, sizeof(char));
     while(scanner)
     {
-        if(scanner & *number_view)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
+        result[cursor] = scanner & *number_view ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
         /* add separator */
-        if((cursor==SIZE_OF_FLOAT_FR - SIGN)||(cursor==SIZE_OF_FLOAT_FR - EXPONENT))
+        if((cursor == BUF_SIZE_OF_FLOAT_FR - SIGN)||(cursor == BUF_SIZE_OF_FLOAT_FR - EXPONENT))
         {
             result[cursor] = SYMBOL_SEPARATOR;
             cursor++;
         }
 
     }
-    reverse(result, SIZE_OF_FLOAT_FR);
+    reverse_string(result, BUF_SIZE_OF_FLOAT_FR - 1);
     return result;
 }
 
 
 char* double_to_bin(double number)
 {
-    static char result[SIZE_OF_DOUBLE];
+    char *result;
     uint64_t *number_view = (uint64_t*)&number;
     uint64_t scanner;   /* bit scanner */
     int cursor;         /* string cursor */
 
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_DOUBLE; ++i)
-        result[i] = 0;
-
-    if(sizeof(double)!=sizeof(uint64_t))
-        return result;
+    assert(sizeof(double)==sizeof(uint64_t));
 
     /* scan value */
     cursor = 0;
     scanner = 1;
+    result = calloc(BUF_SIZE_OF_DOUBLE, sizeof(char));
     while(scanner)
     {
-        if(scanner & *number_view)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
+        result[cursor] = scanner & *number_view ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
     }
-    reverse(result, SIZE_OF_DOUBLE);
+    reverse_string(result, BUF_SIZE_OF_DOUBLE - 1);
     return result;
 }
 
 
 char* double_to_bin_sp(double number)
 {
-    static char result[SIZE_OF_DOUBLE_WITH_SP];
+    char *result;
     uint64_t *number_view = (uint64_t*)&number;
     uint64_t scanner;   /* bit scanner */
     int cursor;         /* string cursor */
 
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_DOUBLE_WITH_SP; ++i)
-        result[i] = 0;
-
-    if(sizeof(double)!=sizeof(uint64_t))
-        return result;
+    assert(sizeof(double)==sizeof(uint64_t));
 
     /* scan value */
     cursor = 0;
     scanner = 1;
-
+    result = calloc(BUF_SIZE_OF_DOUBLE_WITH_SP, sizeof(char));
     while(scanner)
     {
-        if(scanner & *number_view)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
-
+        result[cursor] = scanner & *number_view ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
         /* add separator */
-        if(!((cursor+1)%(BITS_IN_BYTE + 1)))
+        if(!((cursor + 1)%(CHAR_BIT + 1)) && cursor != BUF_SIZE_OF_DOUBLE_WITH_SP - 1)
         {
             result[cursor] = SYMBOL_SEPARATOR;
             cursor++;
         }
     }
-    reverse(result, SIZE_OF_DOUBLE_WITH_SP);
+    reverse_string(result, BUF_SIZE_OF_DOUBLE_WITH_SP - 1);
     return result;
 }
 
@@ -367,39 +300,31 @@ char* double_to_bin_formatted(double number)
 {
     const int SIGN = 3;
     const int EXPONENT = 15;
-    static char result[SIZE_OF_DOUBLE_FR];
+
+    char *result;
     uint64_t *number_view = (uint64_t*)&number;
     uint64_t scanner;   /* bit scanner */
     int cursor;         /* string cursor */
 
-    /* clear buffer */
-    for(int i=0; i<SIZE_OF_DOUBLE_FR; ++i)
-        result[i] = 0;
-
-    if(sizeof(double)!=sizeof(uint64_t))
-        return result;
+    assert(sizeof(double)==sizeof(uint64_t));
 
     /* scan value */
     cursor = 0;
     scanner = 1;
-
+    result = calloc(BUF_SIZE_OF_DOUBLE_FR, sizeof(char));
     while(scanner)
     {
-        if(scanner & *number_view)
-            result[cursor] = SYMBOL_ONE;
-        else
-            result[cursor] = SYMBOL_ZERO;
-
+        result[cursor] = scanner & *number_view ? SYMBOL_ONE : SYMBOL_ZERO;
         scanner <<= 1;
         cursor++;
         /* add separator */
-        if((cursor==SIZE_OF_DOUBLE_FR - SIGN)||(cursor==SIZE_OF_DOUBLE_FR - EXPONENT))
+        if((cursor == BUF_SIZE_OF_DOUBLE_FR - SIGN)||(cursor == BUF_SIZE_OF_DOUBLE_FR - EXPONENT))
         {
             result[cursor] = SYMBOL_SEPARATOR;
             cursor++;
         }
     }
-    reverse(result, SIZE_OF_DOUBLE_FR);
+    reverse_string(result, BUF_SIZE_OF_DOUBLE_FR - 1);
     return result;
 }
 
@@ -408,8 +333,7 @@ int get_bin_exponent_float(float num)
 {
     struct Display_float *num_map;
 
-    if(sizeof(float)!=sizeof(uint32_t))
-        return 0;
+    assert(sizeof(float)==sizeof(uint32_t));
 
     num_map = (struct Display_float*)(&num);
     return (int)(num_map->exponent + EXPONENT_BIAS_FLOAT);
@@ -426,8 +350,7 @@ float get_fraction_float(float num)
     uint32_t double_fraction_mask = MASK_FLOAT_FRACTION;
     uint32_t exp_mask = MASK_FLOAT_EXPONENT;
 
-    if(sizeof(float)!=sizeof(uint32_t))
-        return 0;
+    assert(sizeof(float)==sizeof(uint32_t));
 
     /* Remove exponent bits */
     num_pointer = (uint32_t*)&num;
@@ -449,8 +372,7 @@ int is_negative_float(float num)
 {
     struct Display_float *num_map;
 
-    if(sizeof(float)!=sizeof(uint32_t))
-        return 0;
+    assert(sizeof(float)==sizeof(uint32_t));
 
     num_map = (struct Display_float*)(&num);
     return (int)(num_map->sign);
@@ -467,8 +389,7 @@ double get_fraction_double(double num)
     uint64_t double_fraction_mask = MASK_DOUBLE_FRACTION;
     uint64_t exp_mask = MASK_DOUBLE_EXPONENT;
 
-    if(sizeof(double)!=sizeof(uint64_t))
-        return 0;
+    assert(sizeof(double)==sizeof(uint64_t));
 
     /* Remove exponent bits */
     num_pointer = (uint64_t*)&num;
@@ -490,8 +411,7 @@ int get_bin_exponent_double(double num)
 {
     struct Display_double *num_map;
 
-    if(sizeof(double)!=sizeof(uint64_t))
-        return 0;
+    assert(sizeof(double)==sizeof(uint64_t));
 
     num_map = (struct Display_double*)(&num);
     return (int)(num_map->exponent + EXPONENT_BIAS_DOUBLE);
@@ -502,8 +422,7 @@ int is_negative_double(double num)
 {
     struct Display_double *num_map;
 
-    if(sizeof(double)!=sizeof(uint64_t))
-        return 0;
+    assert(sizeof(double)==sizeof(uint64_t));
 
     num_map = (struct Display_double*)(&num);
     return (int)(num_map->sign);
@@ -516,12 +435,13 @@ int bin_to_int(char* bin_val)
     int current_bit;
     int cursor;
     size_t length;
+    char* bin_number;
 
-    char* bin_number = trim_string(bin_val);
-    reverse(bin_number, strlen(bin_number));
+    bin_number = trim_string(bin_val);
+    reverse_string(bin_number, strlen(bin_number));
     length = strlen(bin_number);
 
-    if(length!=sizeof(int)*BITS_IN_BYTE)
+    if(length!=sizeof(int)*CHAR_BIT)
         return 0;
 
     result = 0;
@@ -533,6 +453,7 @@ int bin_to_int(char* bin_val)
         }
     }
 
+    free(bin_number);
     return result;
 }
 
@@ -543,12 +464,13 @@ unsigned int bin_to_uint(char* bin_val)
     unsigned int current_bit;
     unsigned int cursor;
     size_t length;
+    char* bin_number;
 
-    char* bin_number = trim_string(bin_val);
-    reverse(bin_number, strlen(bin_number));
+    bin_number = trim_string(bin_val);
+    reverse_string(bin_number, strlen(bin_number));
     length = strlen(bin_number);
 
-    if(length!=sizeof(unsigned int)*BITS_IN_BYTE)
+    if(length!=sizeof(unsigned int)*CHAR_BIT)
         return 0;
 
     result = 0;
@@ -560,6 +482,7 @@ unsigned int bin_to_uint(char* bin_val)
         }
     }
 
+    free(bin_number);
     return result;
 }
 
@@ -571,12 +494,15 @@ float bin_to_float(char* bin_val)
     uint32_t current_bit;
     uint32_t cursor;
     size_t length;
+    char* bin_number;
 
-    char* bin_number = trim_string(bin_val);
-    reverse(bin_number, strlen(bin_number));
+    bin_number = trim_string(bin_val);
+    reverse_string(bin_number, strlen(bin_number));
     length = strlen(bin_number);
 
-    if((length!=sizeof(uint32_t)*BITS_IN_BYTE)||(sizeof(uint32_t)!=sizeof(float)))
+    assert(sizeof(float)==sizeof(uint32_t));
+
+    if(length!=sizeof(uint32_t)*CHAR_BIT)
         return 0;
 
     result = 0;
@@ -589,6 +515,7 @@ float bin_to_float(char* bin_val)
         }
     }
 
+    free(bin_number);
     return *((float*)(result_ptr));
 }
 
@@ -600,12 +527,15 @@ double bin_to_double(char* bin_val)
     uint64_t current_bit;
     uint64_t cursor;
     size_t length;
+    char* bin_number;
 
-    char* bin_number = trim_string(bin_val);
-    reverse(bin_number, strlen(bin_number));
+    bin_number = trim_string(bin_val);
+    reverse_string(bin_number, strlen(bin_number));
     length = strlen(bin_number);
 
-    if((length!=sizeof(uint64_t)*BITS_IN_BYTE)||(sizeof(uint64_t)!=sizeof(double)))
+    assert(sizeof(double)==sizeof(uint64_t));
+
+    if(length!=sizeof(uint64_t)*CHAR_BIT)
         return 0;
 
     result = 0;
@@ -613,11 +543,11 @@ double bin_to_double(char* bin_val)
     for(cursor=0; cursor<length; cursor++)
     {
         current_bit = ((uint64_t)1)<<cursor;
-
         if(bin_number[cursor]==SYMBOL_ONE)
-            result = result | current_bit;
+            result |= current_bit;
     }
 
+    free(bin_number);
     return *((double*)(result_ptr));
 }
 
@@ -625,14 +555,12 @@ double bin_to_double(char* bin_val)
 /* Remove spaces and other non-digit characters from string */
 char* trim_string(char* str)
 {
-    static char buffer[MAX_CHAR_BUFFER];
+    char *buffer;
     size_t length;
     size_t cursor_string;
     size_t cursor_buffer;
 
-    /* Clear buffer */
-    for(cursor_buffer=0; cursor_buffer<MAX_CHAR_BUFFER; cursor_buffer++)
-        buffer[cursor_buffer] = 0;
+    buffer = calloc(MAX_CHAR_BUFFER, sizeof(char));
 
     length = strlen(str);
     cursor_buffer = cursor_string = 0;
@@ -653,21 +581,20 @@ char* trim_string(char* str)
 
 
 /* Makes the character string reversed */
-void reverse(char* input, size_t size)
+void reverse_string(char* input, size_t size)
 {
-    int counter;
+    size_t left_cursor;
+    size_t right_cursor;
 
-    if(size%2==0)
-        size--;
-    else
-        size -= 2;
-
-    counter = 0;
-    while(counter<size)
+    left_cursor = 0;
+    right_cursor = size - 1;
+    while(left_cursor<right_cursor)
     {
         /* XOR swap */
-        input[counter] ^= input[size];
-        input[size] ^= input[counter];
-        input[counter++] ^= input[size--];
+        input[left_cursor] ^= input[right_cursor];
+        input[right_cursor] ^= input[left_cursor];
+        input[left_cursor] ^= input[right_cursor];
+        ++left_cursor;
+        --right_cursor;
     }
 }
