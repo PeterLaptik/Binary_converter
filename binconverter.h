@@ -1,27 +1,25 @@
 #ifndef BINCONVERTER_H_INCLUDED
 #define BINCONVERTER_H_INCLUDED
 
-/***********************************************************************************/
-/***********************************************************************************/
-/***  Converts numbers into binary view as a character sequences of '1' and '0', ***/
-/****          or character sequences of '0' and '1' into numbers              *****/
-/*****                                                                        ******/
-/******   postfixes:                                                       *********/
-/*******  '_sp' means bytes separated by space                            **********/
-/******** '_formatted' means sign/exponent/fraction separated by spaces  ***********/
-/*********                                                              ************/
-/********** written by Peter Laptik                                    *************/
-/***********************************************************************************/
-/***********************************************************************************/
+/*************************************************************************************/
+/*************************************************************************************/
+/***  Converts numbers into binary view as a character sequence of '1' and '0',    ***/
+/****          or character sequences of '0' and '1' into numbers                 ****/
+/*****                                                                           *****/
+/******   function names postfixes:                                           ********/
+/*******  '_sp' means bytes are separated by space                           *********/
+/******** '_formatted' means sign/exponent/fraction are separated by spaces **********/
+/*********                                                                 ***********/
+/***********************                                         *********************/
+/*************************************************************************************/
+
 
 #ifdef __cplusplus
     extern "C" {
 #endif // __cplusplus
 
-    /* Preliminary check of types sizes. Returns zero on error */
-    int check_compatibility(void);
-
     /* Conversion numbers to binary representation as a char sequence of '0' and '1' */
+    /* All returned char-pointers have to be freed manually */
     char* int_to_bin(int number);
     char* int_to_bin_sp(int number);
     char* uint_to_bin(unsigned int number);
@@ -44,8 +42,7 @@
     int get_bin_exponent_double(double num);
     double get_fraction_double(double num);
 
-    /* Reverse conversion: char sequence of '0' and '1' to numbers. */
-    /* Ignores space-separators. Returns 0 on error */
+    /* Reverse conversion: char sequence of '0' and '1' to numbers. Ignore space-separators */
     int bin_to_int(char* bin_val);
     unsigned int bin_to_uint(char* bin_val);
     double bin_to_double(char* bin_val);
